@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     const movie = await tmdbRes.json();
 
     // This is a static DASH URL (replace with your dynamic one later)
-    const streamUrl = "https://storage.googleapis.com/shaka-demo-assets/angel-one/dash.mpd";
+    const streamUrl = "https://tglmp01.akamaized.net/out/v1/de55fad9216e4fe7ad8d2eed456ba1ec/manifest.mpd";
 
     res.status(200).json({
       tmdbId,
