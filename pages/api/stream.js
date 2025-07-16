@@ -2,18 +2,19 @@
 
 export default async function handler(req, res) {
   const tmdbId = req.query.id;
-  if (!tmdbId) return res.status(400).json({ error: "Missing TMDB ID" });
+  if (!tmdbId) {
+    return res.status(400).json({ error: "Missing TMDB ID" });
+  }
 
   try {
-    // Fetch movie info from TMDB
     const tmdbRes = await fetch(
       `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${process.env.TMDB_API_KEY}`
     );
     if (!tmdbRes.ok) throw new Error("TMDB fetch failed");
     const movie = await tmdbRes.json();
 
-    // Sample logic to dynamically build a stream URL (replace with real logic)
-    const streamUrl = `https://tmdb-stream.vercel.app/stream/${tmdbId}.mpd`;
+    // Map TMDB ID to the corresponding DASH manifest file
+    const streamUrl = `/streams/${tmdbId}.mpd`;
 
     res.status(200).json({
       tmdbId,
