@@ -1,5 +1,4 @@
 // pages/index.js
-
 import { useEffect, useRef, useState } from 'react';
 import shaka from 'shaka-player';
 
@@ -9,24 +8,6 @@ export default function Home() {
   const [tmdbId, setTmdbId] = useState("1087192");
   const [title, setTitle] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
-const video = document.getElementById("video"); // <video id="video"></video>
-const manifestUri = `https://tmdb-stream.vercel.app/stream/${type}/${id}.mpd`; // or whatever path you're using
-
-async function initPlayer() {
-  const player = new shaka.Player(video);
-  try {
-    await player.load(manifestUri);
-    console.log("The video has now been loaded!");
-  } catch (e) {
-    console.error("Error loading video", e);
-  }
-}
-shaka.polyfill.installAll();
-if (shaka.Player.isBrowserSupported()) {
-  initPlayer();
-} else {
-  console.error("Browser not supported!");
-}
 
   useEffect(() => {
     shaka.polyfill.installAll();
@@ -38,12 +19,17 @@ if (shaka.Player.isBrowserSupported()) {
       const res = await fetch(`/api/stream?id=${tmdbId}`);
       const data = await res.json();
 
-      const player = new shaka.Player(videoRef.current);
+      if (!data.streamUrl) throw new Error("Missing stream URL");
+
+      const video = videoRef.current;
+      const player = new shaka.Player(video);
+
       await player.load(data.streamUrl);
 
       setTitle(data.title);
       setReleaseDate(data.release_date);
     } catch (err) {
+      console.error("Error loading stream:", err);
       alert("Failed to load stream");
     } finally {
       setLoading(false);
