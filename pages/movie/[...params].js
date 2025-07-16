@@ -1,55 +1,67 @@
-// pages/movie/[...params].js
-
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import shaka from "shaka-player";
 
 export default function MoviePlayer() {
-  const router = useRouter();
-  const { params } = router.query;
-  const tmdbId = params?.[0];
+  const { query } = useRouter();
+  const movieId = query?.params?.[0]; // TMDB ID from route
   const videoRef = useRef(null);
-  const [movie, setMovie] = useState(null);
+  const [metadata, setMetadata] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!tmdbId) return;
+    if (!movieId) return;
 
-    // Initialize Shaka
+    // Load Shaka polyfills and check support
     shaka.polyfill.installAll();
     if (!shaka.Player.isBrowserSupported()) {
-      console.error("Browser not supported by Shaka Player");
+      setError("❌ Shaka Player is not supported in your browser.");
       return;
     }
 
-    // Fetch metadata + stream URL
-    fetch(`/api/stream?id=${tmdbId}`)
-      .then(res => res.json())
-      .then(data => {
-        setMovie(data);
-        return data.streamUrl;
-      })
-      .then(async (manifestUri) => {
-        const player = new shaka.Player(videoRef.current);
-        await player.load(manifestUri);
-      })
-      .catch(err => console.error("Error loading stream:", err));
-  }, [tmdbId]);
+    // Fetch stream metadata
+    fetch(`/api/stream?id=${movieId}`)
+      .then((res) => res.json())
+      .then(async (data) => {
+        setMetadata(data);
 
-  if (!tmdbId) return <p>Loading...</p>;
+        const player = new shaka.Player(videoRef.current);
+        try {
+          await player.load(data.streamUrl); // Load DASH stream
+        } catch (e) {
+          console.error("Error loading video:", e);
+          setError("❌ Failed to load video.");
+        }
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setError("❌ Could not fetch stream metadata.");
+      });
+  }, [movieId]);
+
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (!movieId) return <p>Loading route...</p>;
 
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
-      <h1>🎥 Playing Movie ID: {tmdbId}</h1>
-      {movie && <h2>{movie.title} ({movie.release_date})</h2>}
-
-      <video
-        ref={videoRef}
-        width="100%"
-        height="auto"
-        controls
-        autoPlay
-        style={{ backgroundColor: "#000" }}
-      />
+      <h1>🎬 Playing Movie ID: {movieId}</h1>
+      {metadata && (
+        <>
+          <h2>
+            {metadata.title} ({metadata.release_date})
+          </h2>
+          <video
+            ref={videoRef}
+            width="100%"
+            height="auto"
+            controls
+            autoPlay
+            style={{ backgroundColor: "#000", borderRadius: "8px" }}
+            poster={metadata.posterUrl || "/placeholder.jpg"}
+          />
+        </>
+      )}
+      {!metadata && <p>⏳ Fetching video data...</p>}
     </div>
   );
 }
