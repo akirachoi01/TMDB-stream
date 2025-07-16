@@ -9,6 +9,24 @@ export default function Home() {
   const [tmdbId, setTmdbId] = useState("1087192");
   const [title, setTitle] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
+const video = document.getElementById("video"); // <video id="video"></video>
+const manifestUri = `https://tmdb-stream.vercel.app/stream/${type}/${id}.mpd`; // or whatever path you're using
+
+async function initPlayer() {
+  const player = new shaka.Player(video);
+  try {
+    await player.load(manifestUri);
+    console.log("The video has now been loaded!");
+  } catch (e) {
+    console.error("Error loading video", e);
+  }
+}
+shaka.polyfill.installAll();
+if (shaka.Player.isBrowserSupported()) {
+  initPlayer();
+} else {
+  console.error("Browser not supported!");
+}
 
   useEffect(() => {
     shaka.polyfill.installAll();
